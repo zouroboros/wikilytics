@@ -1,6 +1,6 @@
 use std::io::BufRead;
 use quick_xml::reader::Reader;
-use quick_xml::events::{Event};
+use quick_xml::events::Event;
 
 pub struct WikiPages<R> {
     reader: Reader<R>

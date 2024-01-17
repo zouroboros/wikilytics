@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use parse_wiki_text::{Configuration, Node};
 
-use crate::wiki_pages::WikiPage;
+use crate::network_generator::wiki_pages::WikiPage;
 
 pub fn linked_articles<'a>(page: &'a WikiPage) -> Vec<&str> {
     let parser = Configuration::default();

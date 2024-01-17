@@ -1,18 +1,17 @@
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 
-use bzip2::bufread::{MultiBzDecoder};
+use bzip2::bufread::MultiBzDecoder;
 use quick_xml::reader::Reader;
 
-use crate::wiki_pages::WikiPages;
-use crate::wiki_text::linked_articles;
+mod network_generator;
 
-mod wiki_pages;
-mod wiki_text;
+use crate::network_generator::wiki_pages::WikiPages;
+use crate::network_generator::wiki_text::linked_articles;
 
 fn main() -> std::io::Result<()> {
     println!("wikilytics");
-    let file = File::open("enwiki-20231220-pages-articles-multistream.xml.bz2")?;
+    let file = File::open("simplewiki-20230820-pages-articles-multistream.xml.bz2")?;
     let file_reader = BufReader::new(file);
     let bz_decoder = MultiBzDecoder::new(file_reader);
     let bz_reader = BufReader::new(bz_decoder);
