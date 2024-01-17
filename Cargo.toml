@@ -1,0 +1,11 @@
+[package]
+name = "wikilytics"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bzip2 = "0.4.4"
+parse_wiki_text = "0.1.5"
+quick-xml = "0.31.0"
