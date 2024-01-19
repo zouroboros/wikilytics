@@ -6,8 +6,8 @@ use quick_xml::reader::Reader;
 
 mod network_generator;
 
+use crate::network_generator::generate_network;
 use crate::network_generator::wiki_pages::WikiPages;
-use crate::network_generator::wiki_text::linked_articles;
 
 fn main() -> std::io::Result<()> {
     println!("wikilytics");
@@ -20,14 +20,16 @@ fn main() -> std::io::Result<()> {
 
     let pages = WikiPages::new(reader);
 
+    let network = generate_network(pages);
+
     let adjacency_file = File::create("adjacency_file")?;
     let mut adjacency_writer = BufWriter::new(adjacency_file);
 
-    for page in pages {
-        adjacency_writer.write_all(page.title.as_bytes())?;
-        for linked_page in linked_articles(&page) {
+    for (page, links) in network {
+        adjacency_writer.write_all(page.as_bytes())?;
+        for link in links {
             adjacency_writer.write_all(",".as_bytes())?;
-            adjacency_writer.write_all(linked_page.as_bytes())?;
+            adjacency_writer.write_all(link.as_bytes())?;
         }
         adjacency_writer.write_all("\n".as_bytes())?;
     }
