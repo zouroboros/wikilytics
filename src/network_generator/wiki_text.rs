@@ -4,15 +4,17 @@ use parse_wiki_text::{Configuration, Node};
 
 use crate::network_generator::wiki_pages::WikiPage;
 
-pub fn linked_articles(page: &WikiPage) -> Vec<String> {
+type WikiText<'a> = Vec<Node<'a>>;
+
+pub fn parse_text(page: &WikiPage) -> WikiText {
     let parser = Configuration::default();
     let result = parser.parse(&page.text);
 
-    filter_links(result.nodes)
+    result.nodes
 }
 
-fn filter_links(nodes: Vec<Node>) -> Vec<String> {
-    let mut nodes: VecDeque<Node> = nodes.into();
+pub fn linked_articles(text: WikiText) -> Vec<String> {
+    let mut nodes: VecDeque<Node> = text.into();
     let mut links: VecDeque<String> = VecDeque::new();
 
     while let Some(node) = nodes.pop_front() {
@@ -53,4 +55,11 @@ fn filter_links(nodes: Vec<Node>) -> Vec<String> {
     }
 
     links.into()
+}
+
+pub fn is_redirect(text: &WikiText) -> bool {
+    text.iter().any(|node| { match node {
+        Node::Redirect{..} => true,
+        _ => false
+    } })
 }
