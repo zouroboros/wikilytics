@@ -14,18 +14,41 @@ pub fn number_of_edges(network: &HashMap<String, Vec<String>>) -> usize {
     number_of_edges
 }
 
-pub fn find_nodes_of_max_out_degree(network: &HashMap<String, Vec<String>>) -> (Vec<&String>, usize) {
-    let mut max_out_degree = 0;
-    let mut nodes_of_max_out_degree = Vec::new();
+pub fn calculate_out_degrees(network: &HashMap<String, Vec<String>>) -> HashMap<&String, usize> {
+    let mut out_degrees = HashMap::with_capacity(network.capacity());
 
     for (node, edges) in network {
-        if edges.len() > max_out_degree {
-            max_out_degree = edges.len();
-            nodes_of_max_out_degree = vec![node];
-        } else if edges.len() == max_out_degree {
-            nodes_of_max_out_degree.push(node)
+        out_degrees.insert(node, edges.len());
+    }
+
+    out_degrees
+}
+
+pub fn calculate_in_degrees(network: &HashMap<String, Vec<String>>) -> HashMap<&String, usize> {
+    let mut in_degrees = HashMap::with_capacity(network.capacity());
+
+    for (_, edges) in network {
+        for linked_node in edges {
+            in_degrees.insert(linked_node, in_degrees.get(linked_node)
+                .map_or(1, |count| count + 1));
         }
     }
 
-    (nodes_of_max_out_degree, max_out_degree)
+    in_degrees
+}
+
+pub fn find_max_degree(degrees: HashMap<&String, usize>) -> (Vec<&String>, usize) {
+    let mut max_degree = 0;
+    let mut nodes_of_max_degree = Vec::new();
+
+    for (node, degree) in degrees {
+        if degree > max_degree {
+            max_degree = degree;
+            nodes_of_max_degree = vec![node];
+        } else if degree == max_degree {
+            nodes_of_max_degree.push(node)
+        }
+    }
+
+    (nodes_of_max_degree, max_degree)
 }
