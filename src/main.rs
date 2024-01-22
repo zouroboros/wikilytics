@@ -13,7 +13,7 @@ use crate::statistics::gather_statistics;
 
 fn main() -> std::io::Result<()> {
     println!("wikilytics");
-    let file = File::open("enwiki-20231220-pages-articles-multistream.xml.bz2")?;
+    let file = File::open("simplewiki-20230820-pages-articles-multistream.xml.bz2")?;
     let file_reader = BufReader::new(file);
     let bz_decoder = MultiBzDecoder::new(file_reader);
     let bz_reader = BufReader::new(bz_decoder);

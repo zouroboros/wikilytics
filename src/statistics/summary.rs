@@ -37,18 +37,28 @@ pub fn calculate_in_degrees(network: &HashMap<String, Vec<String>>) -> HashMap<&
     in_degrees
 }
 
-pub fn find_max_degree(degrees: HashMap<&String, usize>) -> (Vec<&String>, usize) {
+pub fn find_max_degree(degrees: &HashMap<&String, usize>) -> (Vec<String>, usize) {
     let mut max_degree = 0;
     let mut nodes_of_max_degree = Vec::new();
 
     for (node, degree) in degrees {
-        if degree > max_degree {
-            max_degree = degree;
-            nodes_of_max_degree = vec![node];
-        } else if degree == max_degree {
-            nodes_of_max_degree.push(node)
+        if *degree > max_degree {
+            max_degree = *degree;
+            nodes_of_max_degree = vec!((*node).to_owned());
+        } else if *degree == max_degree {
+            nodes_of_max_degree.push((*node).to_owned())
         }
     }
 
     (nodes_of_max_degree, max_degree)
+}
+
+pub fn degree_histogram(degrees: &HashMap<&String, usize>, max_degree: usize) -> Vec<usize> {
+    let mut histogram = vec![0; max_degree + 1];
+
+    for (_, degree) in degrees {
+        histogram[*degree] = histogram[*degree] + 1;
+    }
+
+    histogram
 }
