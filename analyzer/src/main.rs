@@ -26,7 +26,7 @@ fn main() -> std::io::Result<()> {
 
     let statistics = gather_statistics(&network);
 
-    let statistics_file = File::create("statistics.json")?;
+    let statistics_file = File::create("../viewer/public/statistics.json")?;
     let statistics_writer = BufWriter::new(statistics_file);
 
     serde_json::to_writer(statistics_writer, &statistics)?;
