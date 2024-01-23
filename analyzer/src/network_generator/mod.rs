@@ -11,11 +11,22 @@ pub fn generate_network<T: BufRead>(pages: WikiXmlDump<T>) -> HashMap<String, Ve
     for page in pages {
         let text = parse_text(&page);
 
-        if !is_redirect(&text) {
+        if page.namespace_id == 0 && !is_redirect(&text) {
             adjacency.insert(page.title.to_owned(), linked_articles(text));
         }
 
     }
 
-    adjacency
+    remove_dangling_links(adjacency)
+}
+
+fn remove_dangling_links(network: HashMap<String, Vec<String>>) -> HashMap<String, Vec<String>> {
+    // TODO zouroboros 2024-01-23 there must a way to do this more efficiently
+    HashMap::from_iter(network.iter()
+        .map(|(page, links)| 
+            (page.to_owned(), links.iter()
+                .filter(|link| network.contains_key(*link))
+                .map(|link| link.to_owned())
+                .collect::<Vec<String>>())
+            ))
 }

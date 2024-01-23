@@ -8,7 +8,8 @@ pub struct WikiXmlDump<R> {
 
 pub struct WikiPage {
     pub title: String,
-    pub text: String
+    pub text: String,
+    pub namespace_id: i16
 }
 
 impl<R: BufRead> WikiXmlDump<R> {
@@ -45,9 +46,11 @@ fn read_page<R: BufRead>(reader: &mut Reader<R>) -> Option<WikiPage> {
 
     let mut is_title = false;
     let mut is_text = false;
+    let mut is_namespace = false;
 
     let mut title_option: Option<String> = None;
     let mut text_option: Option<String> = None;
+    let mut namespace_id_option: Option<i16> = None;
 
     loop {
         match reader.read_event_into(&mut buf) {
@@ -61,6 +64,9 @@ fn read_page<R: BufRead>(reader: &mut Reader<R>) -> Option<WikiPage> {
                     b"text" => {
                         is_text = true;
                     }
+                    b"ns" => {
+                        is_namespace = true;
+                    }
                     _ => ()
                 }
             }
@@ -72,6 +78,9 @@ fn read_page<R: BufRead>(reader: &mut Reader<R>) -> Option<WikiPage> {
                 if is_text {
                     text_option = Some(e.unescape().unwrap().into_owned());
                 }
+                if is_namespace {
+                    namespace_id_option = e.unescape().unwrap().parse::<i16>().ok();
+                }
             }
             Ok(Event::End(e)) => {
                 match e.name().as_ref() {
@@ -80,6 +89,9 @@ fn read_page<R: BufRead>(reader: &mut Reader<R>) -> Option<WikiPage> {
                     }
                     b"text" => {
                         is_text = false;
+                    }
+                    b"ns" => {
+                        is_namespace = false;
                     }
                     b"page" => {
                         break;
@@ -91,7 +103,7 @@ fn read_page<R: BufRead>(reader: &mut Reader<R>) -> Option<WikiPage> {
         }
     }
 
-    Some(WikiPage{ title: title_option?, text: text_option? })
+    Some(WikiPage{ title: title_option?, text: text_option?, namespace_id: namespace_id_option? })
 }
 
 impl<R: BufRead> Iterator for WikiXmlDump<R> {
