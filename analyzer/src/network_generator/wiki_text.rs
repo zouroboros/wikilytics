@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use parse_wiki_text::{Configuration, Node};
 
-use crate::network_generator::wiki_pages::WikiPage;
+use crate::network_generator::wiki_xml_dump::WikiPage;
 
 type WikiText<'a> = Vec<Node<'a>>;
 

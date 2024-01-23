@@ -1,11 +1,11 @@
 use std::{collections::HashMap, io::BufRead};
 
-use self::{wiki_pages::WikiPages, wiki_text::linked_articles, wiki_text::is_redirect, wiki_text::parse_text};
+use self::{wiki_xml_dump::WikiXmlDump, wiki_text::linked_articles, wiki_text::is_redirect, wiki_text::parse_text};
 
-pub mod wiki_pages;
+pub mod wiki_xml_dump;
 pub mod wiki_text;
 
-pub fn generate_network<T: BufRead>(pages: WikiPages<T>) -> HashMap<String, Vec<String>> {
+pub fn generate_network<T: BufRead>(pages: WikiXmlDump<T>) -> HashMap<String, Vec<String>> {
     let mut adjacency = HashMap::new();
 
     for page in pages {

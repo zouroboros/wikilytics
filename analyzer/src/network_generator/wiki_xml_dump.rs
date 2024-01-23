@@ -2,7 +2,7 @@ use std::io::BufRead;
 use quick_xml::reader::Reader;
 use quick_xml::events::Event;
 
-pub struct WikiPages<R> {
+pub struct WikiXmlDump<R> {
     reader: Reader<R>
 }
 
@@ -11,11 +11,32 @@ pub struct WikiPage {
     pub text: String
 }
 
-impl<R: BufRead> WikiPages<R> {
-    pub fn new(reader: Reader<R>) -> WikiPages<R> {
-        WikiPages {
+impl<R: BufRead> WikiXmlDump<R> {
+    pub fn new(reader: Reader<R>) -> WikiXmlDump<R> {
+        WikiXmlDump {
             reader: reader,
         }
+    }
+
+    pub fn read_base(&mut self) -> Option<String> {
+        let mut buf = Vec::new();
+        let mut found_base = false;
+
+        loop {
+            match self.reader.read_event_into(&mut buf) {
+                Err(e) => panic!("Error at position {}: {:?}", self.reader.buffer_position(), e),
+                Ok(Event::Eof) => break,
+                Ok(Event::Start(e)) => found_base = e.name().as_ref() == b"base",
+                Ok(Event::Text(e)) => {
+                    if found_base {
+                        return Some(e.unescape().unwrap().into_owned())
+                    }
+                }
+                _ => (),
+            }
+        }
+
+        None
     }
 }
 
@@ -73,7 +94,7 @@ fn read_page<R: BufRead>(reader: &mut Reader<R>) -> Option<WikiPage> {
     Some(WikiPage{ title: title_option?, text: text_option? })
 }
 
-impl<R: BufRead> Iterator for WikiPages<R> {
+impl<R: BufRead> Iterator for WikiXmlDump<R> {
     type Item = WikiPage;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -8,7 +8,7 @@ mod network_generator;
 mod statistics;
 
 use crate::network_generator::generate_network;
-use crate::network_generator::wiki_pages::WikiPages;
+use crate::network_generator::wiki_xml_dump::WikiXmlDump;
 use crate::statistics::gather_statistics;
 
 fn main() -> std::io::Result<()> {
@@ -20,11 +20,13 @@ fn main() -> std::io::Result<()> {
 
     let reader = Reader::from_reader(bz_reader);
 
-    let pages = WikiPages::new(reader);
+    let mut xml_dump = WikiXmlDump::new(reader);
 
-    let network = generate_network(pages);
+    let base = xml_dump.read_base().unwrap();
 
-    let statistics = gather_statistics(&network);
+    let network = generate_network(xml_dump);
+
+    let statistics = gather_statistics(&network, base);
 
     let statistics_file = File::create("../viewer/public/statistics.json")?;
     let statistics_writer = BufWriter::new(statistics_file);

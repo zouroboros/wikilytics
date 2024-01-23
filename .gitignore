@@ -2,3 +2,4 @@ analyzer/target
 **.bz2
 viewer/node_modules
 **.vscode
+viewer/public/statistics.json
