@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, BufWriter};
 
 use bzip2::bufread::MultiBzDecoder;
 use quick_xml::reader::Reader;
@@ -26,7 +26,10 @@ fn main() -> std::io::Result<()> {
 
     let statistics = gather_statistics(&network);
 
-    println!("Network {:?}", statistics);
+    let statistics_file = File::create("statistics.json")?;
+    let statistics_writer = BufWriter::new(statistics_file);
+
+    serde_json::to_writer(statistics_writer, &statistics)?;
 
     Ok(())
 }

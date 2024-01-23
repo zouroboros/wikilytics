@@ -1,9 +1,12 @@
-use std::{collections::HashMap, borrow::Borrow};
+use std::collections::HashMap;
+use serde::Serialize;
+
 use self::summary::{number_of_edges, number_of_nodes, calculate_out_degrees, calculate_in_degrees, find_max_degree, degree_histogram};
 
 pub mod summary;
 
-#[derive(Debug)]
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct NetworkStatistics {
     number_of_nodes: usize,
     number_of_edges: usize,
