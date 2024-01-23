@@ -1,2 +1,4 @@
 analyzer/target
 **.bz2
+viewer/node_modules
+**.vscode
