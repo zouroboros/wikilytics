@@ -1,4 +1,5 @@
 export interface Statistics {
+    mainPage: string;
     numberOfNodes: number;
     numberOfEdges: number;
     nodesOfMaxOutDegree: [string];
