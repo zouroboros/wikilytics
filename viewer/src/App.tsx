@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Statistics, fetchStatistics } from './api'
 import { Summary } from './components/summary';
+import { DegreeChart } from './components/degreeChart';
 
 function App() {
 
@@ -19,7 +20,12 @@ function App() {
         </> 
         : 
         <div>
-          <Summary statistics={statistics} />
+          <div>
+            <Summary statistics={statistics} />
+          </div>
+          <div>
+            <DegreeChart data={statistics.inDegreeDistribution.map((numberOfNodes, degree) => [degree, numberOfNodes])} degreeLabel='Indegree'/>
+          </div>
         </div>
       }
       
