@@ -8,7 +8,6 @@ pub mod summary;
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkStatistics {
-    main_page: String,
     number_of_nodes: usize,
     number_of_edges: usize,
     nodes_of_max_out_degree: Vec<String>,
@@ -19,7 +18,7 @@ pub struct NetworkStatistics {
     in_degree_distribution: Vec<usize>
 }
 
-pub fn gather_statistics(network: &HashMap<String, Vec<String>>, main_page: String) -> NetworkStatistics {
+pub fn gather_statistics(network: &HashMap<String, Vec<String>>) -> NetworkStatistics {
     let out_degrees = calculate_out_degrees(network);
     let in_degrees = calculate_in_degrees(network);
     let (nodes_of_max_out_degree, max_out_degree) = find_max_degree(&out_degrees);
@@ -28,7 +27,6 @@ pub fn gather_statistics(network: &HashMap<String, Vec<String>>, main_page: Stri
     let in_degree_distribution = degree_histogram(&in_degrees, max_in_degree);
 
     NetworkStatistics {
-        main_page,
         number_of_nodes: number_of_nodes(network),
         number_of_edges: number_of_edges(network),
         nodes_of_max_out_degree,
