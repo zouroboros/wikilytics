@@ -1,37 +1,28 @@
-use std::fs::File;
-use std::io::{BufReader, BufWriter};
-
-use bzip2::bufread::MultiBzDecoder;
-use quick_xml::reader::Reader;
+use std::path::PathBuf;
 
 mod network_generator;
 mod statistics;
+mod network;
 
-use crate::network_generator::generate_network;
-use crate::network_generator::wiki_xml_dump::WikiXmlDump;
-use crate::statistics::gather_statistics;
+use crate::network::network;
 
 fn main() -> std::io::Result<()> {
     println!("wikilytics");
-    let file = File::open("simplewiki-20230820-pages-articles-multistream.xml.bz2")?;
-    let file_reader = BufReader::new(file);
-    let bz_decoder = MultiBzDecoder::new(file_reader);
-    let bz_reader = BufReader::new(bz_decoder);
+    let cmd = clap::Command::new("wikilytics")
+        .bin_name("wikilytics")
+        .subcommand_required(true)
+        .subcommand(clap::command!("network")
+            .arg(clap::arg!(<XMLDUMPFILE> "Path to the wikipedia xml dump")
+            .value_parser(clap::value_parser!(PathBuf)))
+            .arg(clap::arg!(<NETWORKFILE> "Where to save the network")
+            .value_parser(clap::value_parser!(PathBuf))));
 
-    let reader = Reader::from_reader(bz_reader);
-
-    let mut xml_dump = WikiXmlDump::new(reader);
-
-    let base = xml_dump.read_base().unwrap();
-
-    let network = generate_network(xml_dump);
-
-    let statistics = gather_statistics(&network, base);
-
-    let statistics_file = File::create("../viewer/public/statistics.json")?;
-    let statistics_writer = BufWriter::new(statistics_file);
-
-    serde_json::to_writer(statistics_writer, &statistics)?;
+    if let Some(("network", matches)) = cmd.get_matches().subcommand() {
+        let wiki_xml_dump_path = matches.get_one::<PathBuf>("XMLDUMPFILE").unwrap();
+        let network_file_path = matches.get_one::<PathBuf>("NETWORKFILE").unwrap();
+        network(wiki_xml_dump_path.to_owned(), network_file_path.to_owned())?;
+        println!("{wiki_xml_dump_path:?}")
+    }
 
     Ok(())
 }
