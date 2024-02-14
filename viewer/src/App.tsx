@@ -24,7 +24,22 @@ function App() {
             <Summary statistics={statistics} />
           </div>
           <div>
-            <DegreeChart data={statistics.inDegreeDistribution.map((numberOfNodes, degree) => [degree, numberOfNodes])} degreeLabel='Indegree'/>
+            <details>
+              <summary>Outdegree distribution</summary>
+                <figure>
+                  <figcaption>Outdegree distribution</figcaption>
+                  <DegreeChart data={statistics.outDegreeDistribution.map((numberOfNodes, degree) => [degree, numberOfNodes])} degreeLabel='Outdegree'/>
+                </figure>
+            </details>
+          </div>
+          <div>
+            <details>
+              <summary>Indegree distribution</summary>
+                <figure>
+                  <figcaption>Indegree distribution</figcaption>
+                  <DegreeChart data={statistics.inDegreeDistribution.map((numberOfNodes, degree) => [degree, numberOfNodes])} degreeLabel='Indegree'/>
+                </figure>
+            </details>
           </div>
         </div>
       }
