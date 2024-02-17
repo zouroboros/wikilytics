@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::File, io::{BufReader, BufWriter, Write}, path::{Path, PathBuf}};
+use std::{collections::HashMap, fs::File, io::{BufReader, BufWriter, Write}, path::PathBuf};
 use std::io::Result;
 
 use bzip2::bufread::MultiBzDecoder;
@@ -36,7 +36,7 @@ fn save_network(network_to_save: HashMap<String, Vec<String>>, save_file_path: P
     let save_file = File::create(save_file_path)?;
     let mut file_writer = BufWriter::new(save_file);
 
-    let separator = ", ".as_bytes();
+    let separator = "; ".as_bytes();
     let newline = "\n".as_bytes();
 
     for (node, connected_nodes) in network_to_save {

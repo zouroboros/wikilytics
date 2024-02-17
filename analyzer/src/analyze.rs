@@ -21,7 +21,7 @@ fn load_network(network_file_path: PathBuf) -> Result<HashMap<String, Vec<String
     for line_result in network_file_reader.lines() {
         let line = line_result?;
 
-        let mut entries = line.split(",");
+        let mut entries = line.split(";");
         if let Some(node) = entries.next() {
             network.insert(node.to_owned(), Vec::from_iter(entries.map(|s| s.to_owned())));
         }

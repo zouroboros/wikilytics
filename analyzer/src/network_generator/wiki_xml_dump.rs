@@ -6,9 +6,10 @@ pub struct WikiXmlDump<R> {
     reader: Reader<R>
 }
 
+#[derive(Debug)]
 pub struct WikiPage {
     pub title: String,
-    pub text: String,
+    pub text: Option<String>,
     pub namespace_id: i16
 }
 
@@ -55,7 +56,7 @@ fn read_page<R: BufRead>(reader: &mut Reader<R>) -> Option<WikiPage> {
     loop {
         match reader.read_event_into(&mut buf) {
             Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
-            Ok(Event::Eof) => break,
+            Ok(Event::Eof) => return None,
             Ok(Event::Start(e)) => {
                 match e.name().as_ref() {
                     b"title" => {
@@ -78,6 +79,7 @@ fn read_page<R: BufRead>(reader: &mut Reader<R>) -> Option<WikiPage> {
                 if is_text {
                     text_option = Some(e.unescape().unwrap().into_owned());
                 }
+                
                 if is_namespace {
                     namespace_id_option = e.unescape().unwrap().parse::<i16>().ok();
                 }
@@ -103,7 +105,11 @@ fn read_page<R: BufRead>(reader: &mut Reader<R>) -> Option<WikiPage> {
         }
     }
 
-    Some(WikiPage{ title: title_option?, text: text_option?, namespace_id: namespace_id_option? })
+    Some(WikiPage{ 
+        title: title_option.expect("A page must have a title!"), 
+        text: text_option, 
+        namespace_id: namespace_id_option.expect("A page must have a namespace!") 
+    })
 }
 
 impl<R: BufRead> Iterator for WikiXmlDump<R> {

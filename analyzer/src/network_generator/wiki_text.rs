@@ -6,11 +6,13 @@ use crate::network_generator::wiki_xml_dump::WikiPage;
 
 type WikiText<'a> = Vec<Node<'a>>;
 
-pub fn parse_text(page: &WikiPage) -> WikiText {
+pub fn parse_text<'a>(page: &'a WikiPage) -> Option<WikiText<'a>> {
     let parser = Configuration::default();
-    let result = parser.parse(&page.text);
+    let text = page.text.as_ref()?;
 
-    result.nodes
+    let result = parser.parse(text);
+
+    Some(result.nodes)
 }
 
 pub fn linked_articles(text: WikiText) -> Vec<String> {
@@ -62,4 +64,16 @@ pub fn is_redirect(text: &WikiText) -> bool {
         Node::Redirect{..} => true,
         _ => false
     } })
+}
+
+pub fn redirects_to(text: &WikiText) -> Option<String> {
+    return text.iter().map(|node| 
+        match *node {
+            Node::Redirect{ target, .. } => Some(target.to_owned()),
+            _ => None
+    }).find(|option| { 
+        match option {
+            Some(..) => true,
+            _ => false
+    } })?;
 }
