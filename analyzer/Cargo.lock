@@ -132,12 +132,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "523dc4f511e55ab87b694dc30d0f820d60906ef06413f93d4d7a1385599cc149"
 
 [[package]]
-name = "parse_wiki_text"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd59a245c58efa02bd73c9462fd9d4c28952d650092c6bcba43b60b4707171dd"
-
-[[package]]
 name = "pkg-config"
 version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -242,7 +236,6 @@ version = "0.1.0"
 dependencies = [
  "bzip2",
  "clap",
- "parse_wiki_text",
  "quick-xml",
  "serde",
  "serde_json",

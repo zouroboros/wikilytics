@@ -11,19 +11,26 @@ pub fn generate_network<T: BufRead>(pages: WikiXmlDump<T>) -> HashMap<String, Ve
 
     for page in pages {
 
+        println!("{:?}", page.title);
+
         if page.namespace_id == 0 {
-            if let Some(text) = parse_text(&page) {
+            println!("start parseing");
+            let links = parse_text(&page);
+            println!("finished parseing");
+
+
+            if let Some(links) = links {
                 
-                if !is_redirect(&text) {
+                if !is_redirect(&links) {
                 
-                    let links = linked_articles(text).iter()
-                        .filter_map(canonicalize_link)
-                        .collect::<Vec<String>>();
+                    let links = linked_articles(&links).iter()
+                        .filter_map(|link| canonicalize_link(*link))
+                        .collect();
                     adjacency.insert(page.title, links);
         
                 } else {
-                    
-                    if let Some(target) = redirects_to(&text) {
+                    if let Some(target) = redirects_to(&links).and_then(canonicalize_link) {
+
                         redirects.insert(page.title, target);
                     }           
                 }
@@ -33,8 +40,16 @@ pub fn generate_network<T: BufRead>(pages: WikiXmlDump<T>) -> HashMap<String, Ve
         
     }
 
+    println!("scanning done");
+
     let redirects = close_redirects(redirects);
+
+    println!("close redirects done");
+
     resolve_redirects(&mut adjacency, redirects);
+
+    println!("resolve redirects done");
+
 
     remove_dangling_links(adjacency)
 
