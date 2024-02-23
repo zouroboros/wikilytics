@@ -16,6 +16,8 @@ fn main() -> std::io::Result<()> {
         .subcommand(clap::command!("network")
             .arg(clap::arg!(<XMLDUMPFILE> "Path to the wikipedia xml dump")
             .value_parser(clap::value_parser!(PathBuf)))
+            .arg(clap::arg!(<XMLDUMPINDEXFILE> "Path to the wikipedia xml dump index file")
+            .value_parser(clap::value_parser!(PathBuf)))
             .arg(clap::arg!(<NETWORKFILE> "Where to save the network")
             .value_parser(clap::value_parser!(PathBuf))))
         .subcommand(clap::command!("analyze")
@@ -29,8 +31,9 @@ fn main() -> std::io::Result<()> {
 
     if let Some(("network", matches)) = subcommand {
         let wiki_xml_dump_path = matches.get_one::<PathBuf>("XMLDUMPFILE").unwrap();
+        let wiki_xml_dump_index_path = matches.get_one::<PathBuf>("XMLDUMPINDEXFILE").unwrap().to_owned();
         let network_file_path = matches.get_one::<PathBuf>("NETWORKFILE").unwrap();
-        network(wiki_xml_dump_path.to_owned(), network_file_path.to_owned())?;
+        network(wiki_xml_dump_path.to_owned(), wiki_xml_dump_index_path, network_file_path.to_owned())?;
     }
 
     if let Some(("analyze", matches)) = subcommand {

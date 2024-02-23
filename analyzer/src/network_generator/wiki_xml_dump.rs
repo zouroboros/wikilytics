@@ -1,6 +1,9 @@
-use std::io::BufRead;
+use std::io::{BufRead, BufReader, Error, ErrorKind, Read};
+use std::iter::once;
 use quick_xml::reader::Reader;
 use quick_xml::events::Event;
+
+use itertools::Itertools;
 
 pub struct WikiXmlDump<R> {
     reader: Reader<R>
@@ -118,5 +121,43 @@ impl<R: BufRead> Iterator for WikiXmlDump<R> {
     fn next(&mut self) -> Option<Self::Item> {
         read_page(&mut self.reader)
     }
+}
+
+pub type WikiIndex = Vec<WikiIndexEntry>;
+
+pub struct WikiIndexEntry {
+    start: u64,
+    id: u64,
+    title: String
+}
+
+pub fn read_index<R: Read>(reader: BufReader<R>) -> Result<WikiIndex, Error> {
+    let read_line = |line: String| {
+        let mut parts = line.split(":");
+        let start = parts.next()
+            .ok_or(Error::from(ErrorKind::Other))?
+            .parse::<u64>()
+            .map_err(|e| Error::new(ErrorKind::Other, e))?;
+
+        let id = parts.next()
+            .ok_or(Error::from(ErrorKind::Other))?
+            .parse::<u64>()
+            .map_err(|e| Error::new(ErrorKind::Other, e))?;
+
+        let title = parts.next()
+            .ok_or(Error::from(ErrorKind::Other))?
+            .to_owned();
+
+        Ok(WikiIndexEntry{ start, id, title })
+    };
+
+    reader.lines().map(|line| { read_line(line?) }).collect()
+}
+
+pub fn blocks(index: WikiIndex) -> Vec<u64> {
+    index.iter().group_by(|entry| entry.start)
+        .into_iter()
+        .map(|(key, _)| key)
+        .collect()
 }
 
