@@ -10,6 +10,7 @@ pub fn network(path: PathBuf, network_file_path: PathBuf) -> Result<()> {
     let file = File::open(path)?;
     let file_reader = BufReader::new(file);
     let bz_decoder = MultiBzDecoder::new(file_reader);
+
     let bz_reader = BufReader::new(bz_decoder);
 
     let reader = Reader::from_reader(bz_reader);
@@ -18,7 +19,7 @@ pub fn network(path: PathBuf, network_file_path: PathBuf) -> Result<()> {
 
     //let base = xml_dump.read_base().unwrap();
 
-    let network = generate_network_parrallel(xml_dump, 4, 1000);
+    let network = generate_network_parrallel(xml_dump, 1000, 4);
 
     save_network(network, network_file_path)?;
 

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::BufRead, sync::mpsc::{channel, sync_channel, SyncSender, TrySendError}, thread};
+use std::{collections::HashMap, io::BufRead, net, sync::mpsc::{channel, sync_channel, Sender, SyncSender, TrySendError}, thread};
 
 use self::{wiki_text::{is_redirect, linked_articles, parse_text, redirects_to}, wiki_xml_dump::{WikiPage, WikiXmlDump}};
 
@@ -17,26 +17,34 @@ pub fn generate_network<T: BufRead>(pages: WikiXmlDump<T>) -> HashMap<String, Ve
 }
 
 pub fn generate_network_parrallel<T: BufRead>(pages: WikiXmlDump<T>, max_queue_size: usize, number_of_threads: usize) -> HashMap<String, Vec<String>> {
-    let mut senders: Vec<SyncSender<WikiPage>> = Vec::with_capacity(number_of_threads);
-    let (result_sender, result_receiver) = channel();
+    
+    let (adjacency_sender, adjacency_receiver) = channel();
+    let (redirect_sender, redirect_receiver) = channel();
 
-    for _ in 0..number_of_threads {
-        let (sender, receiver) = sync_channel(max_queue_size);
-        senders.push(sender);
-        
-        let result_sender = result_sender.clone();
+    let senders = spawn_page_processing_threads(adjacency_sender, redirect_sender, number_of_threads, max_queue_size);
 
-        thread::spawn(move || {
-            let mut adjacency: HashMap<String, Vec<String>> = HashMap::new();
-            let mut redirects = HashMap::new();
+    let (network_sender, network_receiver) = channel();
+    let (redirect_map_sender, redirect_map_receiver) = channel();
 
-            for page in receiver {
-                process_page(&mut adjacency, &mut redirects, page);
-            }
+    thread::spawn(move || {
+        let mut network = HashMap::new();
 
-            result_sender.send((adjacency, redirects)).unwrap();
-        });
-    }
+        for (node, links) in adjacency_receiver {
+            network.insert(node, links);
+        }
+
+        network_sender.send(network).unwrap();
+    });
+
+    thread::spawn(move || {
+        let mut redirects = HashMap::new();
+
+        for (link, target) in redirect_receiver {
+            redirects.insert(link, target);
+        }
+
+        redirect_map_sender.send(redirects).unwrap();
+    });
 
     let mut channel_index = 0;
     for mut page in pages {
@@ -55,27 +63,55 @@ pub fn generate_network_parrallel<T: BufRead>(pages: WikiXmlDump<T>, max_queue_s
         drop(sender);
     }
 
-    let mut whole_network = HashMap::new();
-    let mut all_redirects = HashMap::new();
+    let redirects = redirect_map_receiver.recv().unwrap();
+    let network = network_receiver.recv().unwrap();
+
+   remove_redirects(network, redirects)
+}
+
+fn spawn_page_processing_threads(
+    adjacency_sender: Sender<(String, Vec<String>)>,
+    redirect_sender: Sender<(String, String)>,
+    number_of_threads: usize, max_queue_size: usize) -> Vec<SyncSender<WikiPage>> {
+    let mut senders: Vec<SyncSender<WikiPage>> = Vec::with_capacity(number_of_threads);
 
     for _ in 0..number_of_threads {
-        let (partial_network, some_redirects) = result_receiver.recv().unwrap();
-
-        whole_network.reserve(partial_network.len());
-        all_redirects.reserve(some_redirects.len());
+        let (sender, receiver) = sync_channel(max_queue_size);
+        senders.push(sender);
         
-        for (node, links) in partial_network {
-            whole_network.insert(node, links);
-        }
+        let adjacency_sender = adjacency_sender.clone();
+        let redirect_sender = redirect_sender.clone();
 
-        for (node, link) in some_redirects {
-            all_redirects.insert(node, link);
-        }
+        thread::spawn(move || {
+            for page in receiver {
+                if page.namespace_id == 0 {
+                    let links = parse_text(&page);
+            
+                    if let Some(links) = links {
+                        
+                        if !is_redirect(&links) {
+                        
+                            let links = linked_articles(&links).iter()
+                                .filter_map(|link| canonicalize_link(*link))
+                                .collect();
+
+                            adjacency_sender.send((page.title, links)).unwrap();
+                
+                        } else {
+                            if let Some(target) = redirects_to(&links).and_then(canonicalize_link) {
+                                redirect_sender.send((page.title, target)).unwrap();
+                            }           
+                        }
+                    }
+                }
+            }
+        });
     }
 
-    drop(result_sender);
+    drop(adjacency_sender);
+    drop(redirect_sender);
 
-   remove_redirects(whole_network, all_redirects)
+    senders
 }
 
 fn process_page(network: &mut HashMap<String, Vec<String>>, redirects: &mut HashMap<String, String>, page: WikiPage) {
