@@ -4,7 +4,7 @@ use std::io::Result;
 use bzip2::bufread::MultiBzDecoder;
 use quick_xml::Reader;
 
-use crate::network_generator::{generate_network, wiki_xml_dump::WikiXmlDump};
+use crate::network_generator::{generate_network, generate_network_parrallel, wiki_xml_dump::WikiXmlDump};
 
 pub fn network(path: PathBuf, network_file_path: PathBuf) -> Result<()> {
     let file = File::open(path)?;
@@ -18,7 +18,7 @@ pub fn network(path: PathBuf, network_file_path: PathBuf) -> Result<()> {
 
     //let base = xml_dump.read_base().unwrap();
 
-    let network = generate_network(xml_dump);
+    let network = generate_network_parrallel(xml_dump, 4, 1000);
 
     save_network(network, network_file_path)?;
 

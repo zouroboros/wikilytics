@@ -1,6 +1,6 @@
-use std::{collections::HashMap, io::BufRead};
+use std::{collections::HashMap, io::BufRead, sync::mpsc::{channel, sync_channel, SyncSender, TrySendError}, thread};
 
-use self::{wiki_xml_dump::WikiXmlDump, wiki_text::linked_articles, wiki_text::is_redirect, wiki_text::redirects_to, wiki_text::parse_text};
+use self::{wiki_text::{is_redirect, linked_articles, parse_text, redirects_to}, wiki_xml_dump::{WikiPage, WikiXmlDump}};
 
 pub mod wiki_xml_dump;
 pub mod wiki_text;
@@ -10,49 +10,101 @@ pub fn generate_network<T: BufRead>(pages: WikiXmlDump<T>) -> HashMap<String, Ve
     let mut redirects = HashMap::new();
 
     for page in pages {
-
-        println!("{:?}", page.title);
-
-        if page.namespace_id == 0 {
-            println!("start parseing");
-            let links = parse_text(&page);
-            println!("finished parseing");
-
-
-            if let Some(links) = links {
-                
-                if !is_redirect(&links) {
-                
-                    let links = linked_articles(&links).iter()
-                        .filter_map(|link| canonicalize_link(*link))
-                        .collect();
-                    adjacency.insert(page.title, links);
-        
-                } else {
-                    if let Some(target) = redirects_to(&links).and_then(canonicalize_link) {
-
-                        redirects.insert(page.title, target);
-                    }           
-                }
-            }
-        }
-
-        
+        process_page(&mut adjacency, &mut redirects, page);
     }
 
-    println!("scanning done");
+   remove_redirects(adjacency, redirects)
+}
 
-    let redirects = close_redirects(redirects);
+pub fn generate_network_parrallel<T: BufRead>(pages: WikiXmlDump<T>, max_queue_size: usize, number_of_threads: usize) -> HashMap<String, Vec<String>> {
+    let mut senders: Vec<SyncSender<WikiPage>> = Vec::with_capacity(number_of_threads);
+    let (result_sender, result_receiver) = channel();
 
-    println!("close redirects done");
+    for _ in 0..number_of_threads {
+        let (sender, receiver) = sync_channel(max_queue_size);
+        senders.push(sender);
+        
+        let result_sender = result_sender.clone();
 
-    resolve_redirects(&mut adjacency, redirects);
+        thread::spawn(move || {
+            let mut adjacency: HashMap<String, Vec<String>> = HashMap::new();
+            let mut redirects = HashMap::new();
 
-    println!("resolve redirects done");
+            for page in receiver {
+                process_page(&mut adjacency, &mut redirects, page);
+            }
 
+            result_sender.send((adjacency, redirects)).unwrap();
+        });
+    }
 
-    remove_dangling_links(adjacency)
+    let mut channel_index = 0;
+    for mut page in pages {
+        let mut sender = &senders[channel_index];
 
+        while let Err(TrySendError::Full(new_page)) = sender.try_send(page) {
+            channel_index = (channel_index + 1) % number_of_threads;
+            sender = &senders[channel_index];
+            page = new_page
+        }
+
+        channel_index = (channel_index + 1) % number_of_threads;
+    }
+
+    for sender in senders {
+        drop(sender);
+    }
+
+    let mut whole_network = HashMap::new();
+    let mut all_redirects = HashMap::new();
+
+    for _ in 0..number_of_threads {
+        let (partial_network, some_redirects) = result_receiver.recv().unwrap();
+
+        whole_network.reserve(partial_network.len());
+        all_redirects.reserve(some_redirects.len());
+        
+        for (node, links) in partial_network {
+            whole_network.insert(node, links);
+        }
+
+        for (node, link) in some_redirects {
+            all_redirects.insert(node, link);
+        }
+    }
+
+    drop(result_sender);
+
+   remove_redirects(whole_network, all_redirects)
+}
+
+fn process_page(network: &mut HashMap<String, Vec<String>>, redirects: &mut HashMap<String, String>, page: WikiPage) {
+    if page.namespace_id == 0 {
+        let links = parse_text(&page);
+
+        if let Some(links) = links {
+            
+            if !is_redirect(&links) {
+            
+                let links = linked_articles(&links).iter()
+                    .filter_map(|link| canonicalize_link(*link))
+                    .collect();
+                network.insert(page.title, links);
+    
+            } else {
+                if let Some(target) = redirects_to(&links).and_then(canonicalize_link) {
+
+                    redirects.insert(page.title, target);
+                }           
+            }
+        }
+    }
+}
+
+fn remove_redirects(mut network: HashMap<String, Vec<String>>, redirects: HashMap<String, String>) -> HashMap<String, Vec<String>> {
+    let all_redirects = close_redirects(redirects);
+    resolve_redirects(&mut network, all_redirects);
+    remove_dangling_links(network)
 }
 
 fn canonicalize_link(link: &String) -> Option<String> {

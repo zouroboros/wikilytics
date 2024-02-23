@@ -49,6 +49,7 @@ pub fn parse_text(page: &WikiPage) -> Option<Vec<LinkOrRedirect>> {
     let end_link_token = [']', ']'];
 
     let read_link = |start_index: usize| {
+        
         let mut current_index = start_index;
     
         while current_index + end_link_token.len() <= chars.len() && 
@@ -67,12 +68,13 @@ pub fn parse_text(page: &WikiPage) -> Option<Vec<LinkOrRedirect>> {
     };
 
     let check_link_start = |index| {
-        check_prefix(index, &start_link_token)
+        check_prefix(index, &start_link_token) && chars.len() > index + start_link_token.len()
     };
 
     let check_redirect_start = |index| {
-        check_prefix(index, &redirect_token_uppercase) ||
-            check_prefix(index, &redirect_token_lowercase)
+        (check_prefix(index, &redirect_token_uppercase) ||
+            check_prefix(index, &redirect_token_lowercase))
+        && chars.len() > index + redirect_token_uppercase.len()
     };
 
     while index < chars.len() {
@@ -243,5 +245,18 @@ mod tests {
         let parse_result = parse_text(&test_page);
 
         assert_eq!(parse_result, Some(vec![LinkOrRedirect::Link("".to_string())]));
+    }
+
+    #[test]
+    fn test_parse_page_with_broken_redirect() {
+        let test_page = WikiPage{
+            namespace_id: 1,
+            text: Some("#REDIRECT".to_string()),
+            title: "Test".to_string()
+        };
+
+        let parse_result = parse_text(&test_page);
+
+        assert_eq!(parse_result, Some(vec![]));
     }
 }
