@@ -143,7 +143,7 @@ fn remove_redirects(mut network: HashMap<String, Vec<String>>, redirects: HashMa
     remove_dangling_links(network)
 }
 
-fn canonicalize_link(link: &String) -> Option<String> {
+pub fn canonicalize_link(link: &String) -> Option<String> {
     let mut chars = link.chars();
     let first_letter = chars.next()?;
     let rest = &chars.collect::<String>();
