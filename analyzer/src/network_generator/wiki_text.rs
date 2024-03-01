@@ -65,8 +65,8 @@ pub fn parse_text(page: &WikiPage) -> Option<Vec<LinkOrRedirect>> {
     };
 
     let check_prefix = |index: usize, token: &[char]| {
-        let end_index = min(chars.len(), index + token.len());
-        chars[index..end_index] == *token
+        let end_index = index + token.len();
+        index < chars.len() && end_index <= chars.len() && chars[index..end_index] == *token
     };
 
     let check_link_start = |index| {
@@ -91,7 +91,7 @@ pub fn parse_text(page: &WikiPage) -> Option<Vec<LinkOrRedirect>> {
     let read_comment = |start_index: usize| {
         let mut index = start_index + start_comment_token.len();
 
-        while !check_comment_end(index) {
+        while !check_comment_end(index) && index < chars.len() {
             index = index + 1;
         }
 
@@ -301,6 +301,19 @@ mod tests {
         let test_page = WikiPage{
             namespace_id: 1,
             text: Some("<!-- #redirect [[test]] -->".to_string()),
+            title: "Test".to_string()
+        };
+
+        let parse_result = parse_text(&test_page);
+
+        assert_eq!(parse_result, Some(vec![]));
+    }
+
+    #[test]
+    fn test_parse_page_partial_comment() {
+        let test_page = WikiPage{
+            namespace_id: 1,
+            text: Some("<!-- #redirect [[test]]".to_string()),
             title: "Test".to_string()
         };
 
