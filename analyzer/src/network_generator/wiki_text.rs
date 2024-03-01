@@ -47,6 +47,8 @@ pub fn parse_text(page: &WikiPage) -> Option<Vec<LinkOrRedirect>> {
     let redirect_token_lowercase = ['#', 'r', 'e', 'd', 'i', 'r', 'e', 'c', 't'];
     let start_link_token = ['[', '['];
     let end_link_token = [']', ']'];
+    let start_comment_token = ['<', '!', '-', '-'];
+    let end_comment_token = ['-', '-', '>'];
 
     let read_link = |start_index: usize| {
         
@@ -78,6 +80,24 @@ pub fn parse_text(page: &WikiPage) -> Option<Vec<LinkOrRedirect>> {
         && check_link_start(index + redirect_token_uppercase.len() + 1)
     };
 
+    let check_comment_start = |index| {
+        check_prefix(index, &start_comment_token)
+    };
+
+    let check_comment_end = |index| {
+        check_prefix(index, &end_comment_token)
+    };
+
+    let read_comment = |start_index: usize| {
+        let mut index = start_index + start_comment_token.len();
+
+        while !check_comment_end(index) {
+            index = index + 1;
+        }
+
+        index
+    };
+
     while index < chars.len() {
         if check_link_start(index) {
             let (link_text, next_index) = read_link(index + start_link_token.len());
@@ -87,6 +107,8 @@ pub fn parse_text(page: &WikiPage) -> Option<Vec<LinkOrRedirect>> {
             let (link_text, next_index) = read_link(index + redirect_token_uppercase.len() + 1 + start_link_token.len());
             links_or_redirects.push(LinkOrRedirect::Redirect(link_text));
             index = next_index;
+        } else if check_comment_start(index) {
+            index = read_comment(index);
         } else {
             index += 1;
         }
@@ -266,6 +288,19 @@ mod tests {
         let test_page = WikiPage{
             namespace_id: 1,
             text: Some("#redirect test".to_string()),
+            title: "Test".to_string()
+        };
+
+        let parse_result = parse_text(&test_page);
+
+        assert_eq!(parse_result, Some(vec![]));
+    }
+
+    #[test]
+    fn test_parse_page_ignore_redirect_in_comment() {
+        let test_page = WikiPage{
+            namespace_id: 1,
+            text: Some("<!-- #redirect [[test]] -->".to_string()),
             title: "Test".to_string()
         };
 
