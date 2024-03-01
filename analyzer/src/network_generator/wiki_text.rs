@@ -75,6 +75,7 @@ pub fn parse_text(page: &WikiPage) -> Option<Vec<LinkOrRedirect>> {
         (check_prefix(index, &redirect_token_uppercase) ||
             check_prefix(index, &redirect_token_lowercase))
         && chars.len() > index + redirect_token_uppercase.len()
+        && check_link_start(index + redirect_token_uppercase.len() + 1)
     };
 
     while index < chars.len() {
@@ -252,6 +253,19 @@ mod tests {
         let test_page = WikiPage{
             namespace_id: 1,
             text: Some("#REDIRECT".to_string()),
+            title: "Test".to_string()
+        };
+
+        let parse_result = parse_text(&test_page);
+
+        assert_eq!(parse_result, Some(vec![]));
+    }
+
+    #[test]
+    fn test_parse_page_ignore_invalid_redirect() {
+        let test_page = WikiPage{
+            namespace_id: 1,
+            text: Some("#redirect test".to_string()),
             title: "Test".to_string()
         };
 
