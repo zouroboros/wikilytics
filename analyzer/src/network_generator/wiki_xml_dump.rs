@@ -1,5 +1,4 @@
 use std::io::{BufRead, BufReader, Error, ErrorKind, Read};
-use std::iter::once;
 use quick_xml::reader::Reader;
 use quick_xml::events::Event;
 
@@ -126,9 +125,9 @@ impl<R: BufRead> Iterator for WikiXmlDump<R> {
 pub type WikiIndex = Vec<WikiIndexEntry>;
 
 pub struct WikiIndexEntry {
-    start: u64,
-    id: u64,
-    title: String
+    pub start: u64,
+    pub id: u64,
+    pub title: String
 }
 
 pub fn read_index<R: Read>(reader: BufReader<R>) -> Result<WikiIndex, Error> {

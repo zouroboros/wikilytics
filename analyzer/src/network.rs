@@ -1,11 +1,11 @@
-use std::{cmp::min, collections::{HashMap, HashSet}, fs::{remove_file, rename, File}, io::{BufRead, BufReader, BufWriter, Error, ErrorKind, Read, Seek, SeekFrom, Write}, path::PathBuf, sync::mpsc::{channel, Sender}, thread};
+use std::{collections::{HashMap, HashSet}, fs::{remove_file, rename, File}, io::{BufRead, BufReader, BufWriter, Error, ErrorKind, Read, Seek, SeekFrom, Write}, path::PathBuf, sync::mpsc::{channel, Sender}, thread};
 use std::io::Result;
 
 use bzip2::bufread::MultiBzDecoder;
 use itertools::Itertools;
 use quick_xml::Reader;
 
-use crate::network_generator::{canonicalize_link, generate_network, generate_network_parrallel, wiki_text::{is_redirect, linked_articles, parse_text, redirects_to}, wiki_xml_dump::{blocks, read_index, WikiPage, WikiXmlDump}};
+use crate::{common::read_from_to, network_generator::{canonicalize_link, generate_network, generate_network_parrallel, wiki_text::{is_redirect, linked_articles, parse_text, redirects_to}, wiki_xml_dump::{blocks, read_index, WikiPage, WikiXmlDump}}};
 
 pub fn network(xml_dump_path: PathBuf, dump_index_path: PathBuf, network_file_path: PathBuf) -> Result<()> {
     let number_of_threads = 4;
@@ -74,16 +74,7 @@ pub fn network(xml_dump_path: PathBuf, dump_index_path: PathBuf, network_file_pa
 }
 
 fn process_partial_dump(xml_dump_path: PathBuf, block_start: u64, block_end: u64, adjacency_sender: Sender<(String, Vec<String>)>, redirect_sender: Sender<(String, String)>) -> Result<()> {
-    let mut file = File::open(xml_dump_path)?;
-    file.seek(SeekFrom::Start(block_start))?;
-
-    let number_of_bytes = block_end - block_start;
-    let file_reader = BufReader::with_capacity(16 * 1024 * 1024, file.take(number_of_bytes));
-    let bz_decoder = MultiBzDecoder::new(file_reader);
-    let bz_reader = BufReader::new(bz_decoder);
-    let mut reader = Reader::from_reader(bz_reader);
-    reader.check_end_names(false);
-    let xml_dump = WikiXmlDump::new(reader);
+    let xml_dump = read_from_to(&xml_dump_path, block_start, block_end)?;
 
     for page in xml_dump {
         if page.namespace_id == 0 {
