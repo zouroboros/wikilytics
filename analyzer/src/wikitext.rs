@@ -1,40 +1,28 @@
-use std::{fs::File, io::BufReader, io::Result, path::PathBuf};
+use std::{io::Result, path::PathBuf};
 
-use bzip2::bufread::MultiBzDecoder;
+use crate::common::{find_entries, read_from};
 
-use crate::{common::read_from, network_generator::wiki_xml_dump::{read_index, WikiIndex, WikiIndexEntry}};
+pub fn wikitext(xml_dump_path: &PathBuf, xml_dump_index_path: &PathBuf, title: &String) -> Result<()> {
 
-pub fn wikitext(xml_dump_path: &PathBuf, xml_dump_index_file_path: &PathBuf, title: &String) -> Result<()> {
-    let file = File::open(xml_dump_index_file_path)?;
-    let file_reader = BufReader::new(file);
-    let bz_decoder = MultiBzDecoder::new(file_reader);
+    let entries = find_entries(xml_dump_index_path, title)?;
 
-    let bz_reader = BufReader::new(bz_decoder);
+    if entries.len() == 0 {
+        println!("No article with title {title} found!");
+    }
 
-    let wiki_index = read_index(bz_reader)?;
+    for entry in entries {
 
-    if let Some(entry) = find_entry(&wiki_index, title) {
         let pages = read_from(xml_dump_path, entry.start)?;
+        
         for page in pages {
+            
             if page.title == entry.title {
                 let text = page.text.unwrap_or("No wikitext!".to_owned());
                 println!("{}", text);
-                return Ok(());
+                break;
             }
         }
     }
 
-    println!("No article with title {title} found!");
-
     Ok(())
-}
-
-fn find_entry<'a>(index: &'a WikiIndex, title: &String) -> Option<&'a WikiIndexEntry> {
-    for entry in index {
-        if entry.title == *title {
-            return Some(&entry)
-        }
-    }
-
-    None
 }

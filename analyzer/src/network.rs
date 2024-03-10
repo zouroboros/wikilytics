@@ -88,7 +88,6 @@ fn process_partial_dump(xml_dump_path: PathBuf, block_start: u64, block_end: u64
                         .collect();
                     adjacency_sender.send((page.title, links)).unwrap();
                 } else {
-
                     if let Some(target) = redirects_to(&links).and_then(canonicalize_link) {
 
                         redirect_sender.send((page.title, target)).unwrap();

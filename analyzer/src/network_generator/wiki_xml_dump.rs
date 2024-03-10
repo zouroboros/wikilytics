@@ -124,6 +124,7 @@ impl<R: BufRead> Iterator for WikiXmlDump<R> {
 
 pub type WikiIndex = Vec<WikiIndexEntry>;
 
+#[derive(Debug)]
 pub struct WikiIndexEntry {
     pub start: u64,
     pub id: u64,
